@@ -1,7 +1,8 @@
 local M = {}
 
+local core = require("streamline.core")
 function M.setup()
-	vim.notify("streamline.nvim setup called", vim.log.levels.INFO, { title = "streamline" })
+	core.init()
 end
 
 return M
