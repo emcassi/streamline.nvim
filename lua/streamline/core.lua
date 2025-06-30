@@ -1,6 +1,7 @@
 local M = {
 	buffers = {},
 	active = nil,
+	ignore_buftypes = { "quickfix", "nofile" },
 }
 
 local function setup_commands()
@@ -75,11 +76,12 @@ function M:on_buffer_modified(buf_id, is_modified)
 	end
 end
 
-local function is_empty_modified_buffer(buf_id)
+function M:is_empty_modified_buffer(buf_id)
 	local name = vim.api.nvim_buf_get_name(buf_id)
 	local modified = vim.api.nvim_buf_get_option(buf_id, "modified")
 	local line_count = vim.api.nvim_buf_line_count(buf_id)
-	return name == "" and line_count <= 1 and not modified
+	local buftype = vim.api.nvim_buf_get_option(buf_id, "buftype")
+	return name == "" and line_count <= 1 and not modified and not self.ignore_buftypes[buftype]
 end
 
 function M:gather_buffers()
