@@ -3,56 +3,118 @@ local M = {
 	active = nil,
 }
 
+local function setup_commands()
+	vim.api.nvim_create_user_command("StreamBuffers", function()
+		M:print_buffers()
+	end, { desc = "Print current buffer list" })
+end
+
 function M:init()
 	vim.api.nvim_create_autocmd({ "BufAdd" }, {
 		callback = function(g)
-			vim.notify(vim.inspect(g))
-			M:sync_buffers()
+			self:on_buffer_added(g.buf) -- Use self instead of M
 		end,
 	})
-	M:sync_buffers()
+	vim.api.nvim_create_autocmd({ "BufDelete" }, {
+		callback = function(g)
+			self:on_buffer_removed(g.buf)
+		end,
+	})
+	vim.api.nvim_create_autocmd({ "BufEnter" }, {
+		callback = function(g)
+			self:on_buffer_entered(g.buf)
+		end,
+	})
+	setup_commands()
+	self:gather_buffers()
 end
 
-function M:sync_buffers()
-	local buffers = vim.api.nvim_list_bufs()
-	local active = vim.api.nvim_get_current_buf()
+function M:get_buffers()
+	return self.buffers
+end
 
-	local new_buffers = {}
-	for i, buf in ipairs(buffers) do
-		if vim.api.nvim_buf_is_valid(buf) then
-			table.insert(new_buffers, buf)
-		else
-			table.remove(self.buffers, i)
-		end
-
-		local name = vim.api.nvim_buf_get_name(buf)
-		if name == "" then
-			table.remove(self.buffers, i)
+function M:gather_buffers()
+	self.buffers = {}
+	for _, id in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_valid(id) then
+			local name = vim.api.nvim_buf_get_name(id)
+			if name ~= "" then
+				table.insert(self.buffers, {
+					id = id,
+					name = name,
+				})
+			end
 		end
 	end
+end
 
-	self.buffers = new_buffers
-	self.active = active
+function M:on_buffer_added(id)
+	if vim.api.nvim_buf_is_valid(id) then
+		local name = vim.api.nvim_buf_get_name(id)
+		if name ~= "" and not self:has_buffer(id) then
+			table.insert(self.buffers, {
+				id = id,
+				name = name,
+			})
+		end
+	end
+end
 
-	local buffer_info = {}
+function M:has_buffer(id)
 	for _, buf in ipairs(self.buffers) do
-		buffer_info[buf] = vim.api.nvim_buf_get_name(buf)
+		if buf.id == id then
+			return true
+		end
 	end
+	return false
+end
 
-	vim.notify(vim.inspect(buffer_info))
+function M:on_buffer_removed(id)
+	for i, buf in ipairs(self.buffers) do
+		if buf.id == id then
+			table.remove(self.buffers, i)
+			if self.active == id then
+				self.active = nil
+			end
+			return
+		end
+	end
+end
+
+function M:on_buffer_entered(id)
+	if vim.api.nvim_buf_is_valid(id) then
+		self.active = id
+	end
 end
 
 function M:get_active_buffer()
-	return self.buffers[self:get_active_index()]
+	for _, buf in ipairs(self.buffers) do
+		if buf.id == self.active then
+			return buf
+		end
+	end
+	return nil
 end
 
 function M:get_active_index()
 	for i, buf in ipairs(self.buffers) do
-		if buf == self.active then
+		if buf.id == self.active then
 			return i
 		end
 	end
-	return 1
+	return nil
+end
+
+function M:print_buffers()
+	local active_idx = self:get_active_index()
+	if active_idx then
+		print(string.format("Active buffer: %d/%d", active_idx, #self.buffers))
+	end
+
+	for i, buf in ipairs(self.buffers) do
+		local active_marker = (buf.id == self.active) and " *" or ""
+		print(string.format("%2d: [%2d] %s%s", i, buf.id, buf.name, active_marker))
+	end
 end
 
 return M
