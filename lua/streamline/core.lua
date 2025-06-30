@@ -6,7 +6,7 @@ local M = {
 
 local function setup_commands()
 	vim.api.nvim_create_user_command("StreamBuffers", function()
-		M:print_buffers()
+		require("streamline.ui"):print_buffers()
 	end, { desc = "Print current buffer list" })
 end
 
@@ -166,26 +166,6 @@ function M:get_active_index()
 		end
 	end
 	return nil
-end
-
-function M:print_buffers()
-	local message = ""
-	local active_idx = self:get_active_index()
-	if active_idx then
-		message = string.format("Active buffer: %d/%d\n", active_idx, #self.buffers)
-	end
-
-	for i, buf in ipairs(self.buffers) do
-		local active_marker = (buf.id == self.active) and "->" or ""
-		local modified_marker = buf.modified and "* " or ""
-		message = message
-			.. string.format("%s %-3d [%2d] %-40s %s\n", active_marker, i, buf.id, buf.display_name, modified_marker)
-	end
-
-	if message == "" then
-		message = "No buffers open"
-	end
-	vim.notify(message, vim.log.levels.INFO)
 end
 
 function M:teardown()
