@@ -2,6 +2,11 @@
 **Your buffers, beautifully organized.
 A smarter, smoother way to navigate, reorder, and manage buffers in Neovim.**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/emcassi/streamline.nvim)
+![GitHub Repo stars](https://img.shields.io/github/stars/emcassi/streamline.nvim)
+
+
 ## Overview
 
 streamline.nvim is a buffer management plugin for Neovim that gives your open files a clear, visual, and navigable structure — just like tabs, but smarter.
@@ -13,6 +18,25 @@ It provides:
 - Intuitive navigation and reordering of buffers (←/→ like browser tabs)
 - A clean, optional UI buffer bar (tabline, side panel, or floating)
 - Extensible APIs for integration and customization
+
+## Installation
+Currently, this plugin is recommended to be set up as a dev plugin. For example, with lazy.nvim, it may look something like this:
+
+```lua
+{
+  "emcassi/streamline.nvim",
+  dev = true,
+  config = function()
+    require("streamline").setup()
+  end
+}
+
+```
+
+## Status
+streamline.nvim is currently in pre-release development (MVP stage).  
+Basic buffer tracking is implemented — reordering, commands, and UI are actively being developed.
+
 
 ## Motivation
 
@@ -70,15 +94,26 @@ require("streamline").setup({
 We understand keybinds are a deeply personal workflow decision. As such, streamline.nvim does not assign any keybinds by default. If you want to set up keybinds, here are the available commands along with some recommendations for keybind ideas.
 
 Commands: 
+- :StreamBuffers (Show all buffers via vim.notify)
 - TODO
 - Fill
 - Out
 - All
+- Future
 - Commands
 
 
 ```lua 
-TODO: Show example config with example keybinds
+{
+    "streamline.nvim",
+    dir = "/path/to/streamline", -- If using local version 
+    name = "streamline",
+    dev = true,
+    config = function()
+        require("streamline").setup()
+        vim.keymap.set("n", "<leader>sb", ":StreamBuffers<CR>", { noremap = true })
+    end,
+},
 ```
 
 ## Planned Features
@@ -138,4 +173,8 @@ This plugin is built to embody design values such as:
 
 *Whether you’re a keyboard minimalist or a mouse-friendly power user, streamline.nvim is here to make Neovim a joy to use — one buffer at a time.*
 
-## 🚧 Currently in active development. Want to contribute ideas, code, or feedback? Open an issue or star the repo to follow development. 🚧
+## Contributing & Feedback
+🚧 streamline.nvim is under active development.
+
+### Have ideas, feature requests, or feedback?  
+👉 [Open an issue](https://github.com/emcassi/streamline.nvim/issues) or ⭐ the repo to follow progress.
