@@ -10,23 +10,28 @@ local function setup_commands()
 end
 
 function M:init()
+	local augroup = vim.api.nvim_create_augroup("streamline", { clear = true })
 	vim.api.nvim_create_autocmd({ "BufAdd" }, {
+		group = augroup,
 		callback = function(g)
 			self:on_buffer_added(g.buf)
 		end,
 	})
 	vim.api.nvim_create_autocmd({ "BufDelete" }, {
+		group = augroup,
 		callback = function(g)
 			self:on_buffer_removed(g.buf)
 		end,
 	})
 	vim.api.nvim_create_autocmd({ "BufEnter" }, {
+		group = augroup,
 		callback = function(g)
 			self:on_buffer_entered(g.buf)
 		end,
 	})
 
 	vim.api.nvim_create_autocmd({ "BufModifiedSet" }, {
+		group = augroup,
 		callback = function(args)
 			local buf_id = args.buf
 			if self:has_buffer(buf_id) then
