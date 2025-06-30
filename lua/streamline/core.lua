@@ -1,6 +1,7 @@
 local M = {
 	buffers = {},
 	active = nil,
+	ignore_buftypes = { "quickfix", "nofile" },
 }
 
 local function setup_commands()
@@ -10,23 +11,28 @@ local function setup_commands()
 end
 
 function M:init()
+	local augroup = vim.api.nvim_create_augroup("streamline", { clear = true })
 	vim.api.nvim_create_autocmd({ "BufAdd" }, {
+		group = augroup,
 		callback = function(g)
 			self:on_buffer_added(g.buf)
 		end,
 	})
 	vim.api.nvim_create_autocmd({ "BufDelete" }, {
+		group = augroup,
 		callback = function(g)
 			self:on_buffer_removed(g.buf)
 		end,
 	})
 	vim.api.nvim_create_autocmd({ "BufEnter" }, {
+		group = augroup,
 		callback = function(g)
 			self:on_buffer_entered(g.buf)
 		end,
 	})
 
 	vim.api.nvim_create_autocmd({ "BufModifiedSet" }, {
+		group = augroup,
 		callback = function(args)
 			local buf_id = args.buf
 			if self:has_buffer(buf_id) then
@@ -52,6 +58,15 @@ local function get_buffer_display_name(buf_id)
 	return "[No Name]"
 end
 
+function M:create_buffer_entry(buf_id)
+	return {
+		id = buf_id,
+		name = vim.api.nvim_buf_get_name(buf_id),
+		display_name = get_buffer_display_name(buf_id),
+		modified = vim.api.nvim_buf_get_option(buf_id, "modified"),
+	}
+end
+
 function M:on_buffer_modified(buf_id, is_modified)
 	for _, buf in ipairs(self.buffers) do
 		if buf.id == buf_id then
@@ -72,38 +87,30 @@ function M:gather_buffers()
 	self.buffers = {}
 	for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
 		if vim.api.nvim_buf_is_valid(buf_id) then
-			local name = vim.api.nvim_buf_get_name(buf_id)
-			local display_name = get_buffer_display_name(buf_id)
-			table.insert(self.buffers, {
-				id = buf_id,
-				name = name,
-				display_name = display_name,
-				modified = vim.api.nvim_buf_get_option(buf_id, "modified"),
-			})
+			local bt = vim.api.nvim_buf_get_option(buf_id, "buftype")
+			if not vim.tbl_contains(self.ignore_buftypes, bt) then
+				local name = vim.api.nvim_buf_get_name(buf_id)
+				local display_name = get_buffer_display_name(buf_id)
+				table.insert(self.buffers, self:create_buffer_entry(buf_id))
+			end
 		end
 	end
 end
 
 function M:on_buffer_added(id)
+	local bt = vim.api.nvim_buf_get_option(id, "buftype")
+	if self.ignore_buftypes[bt] then
+		return
+	end
 	for i, buf in ipairs(self.buffers) do
 		if is_empty_modified_buffer(buf.id) then
-			self.buffers[i] = {
-				id = id,
-				name = vim.api.nvim_buf_get_name(id),
-				display_name = get_buffer_display_name(id),
-				modified = vim.api.nvim_buf_get_option(id, "modified"),
-			}
+			self.buffers[i] = self:create_buffer_entry(id)
 			return
 		end
 	end
 
 	if not self:has_buffer(id) then
-		table.insert(self.buffers, {
-			id = id,
-			name = vim.api.nvim_buf_get_name(id),
-			display_name = get_buffer_display_name(id),
-			modified = vim.api.nvim_buf_get_option(id, "modified"),
-		})
+		table.insert(self.buffers, self:create_buffer_entry(id))
 	end
 end
 
@@ -172,7 +179,7 @@ function M:print_buffers()
 		local active_marker = (buf.id == self.active) and "->" or ""
 		local modified_marker = buf.modified and "* " or ""
 		message = message
-			.. string.format("%s%s%2d: [%2d] %s\n", active_marker, modified_marker, i, buf.id, buf.display_name)
+			.. string.format("%s %-3d [%2d] %-40s %s\n", active_marker, i, buf.id, buf.display_name, modified_marker)
 	end
 
 	if message == "" then
