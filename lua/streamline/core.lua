@@ -12,18 +12,21 @@ end
 
 function M:init()
 	self.augroup = vim.api.nvim_create_augroup("streamline", { clear = true })
+
 	vim.api.nvim_create_autocmd({ "BufAdd" }, {
 		group = self.augroup,
 		callback = function(g)
 			self:on_buffer_added(g.buf)
 		end,
 	})
+
 	vim.api.nvim_create_autocmd({ "BufDelete" }, {
 		group = self.augroup,
 		callback = function(g)
 			self:on_buffer_removed(g.buf)
 		end,
 	})
+
 	vim.api.nvim_create_autocmd({ "BufEnter" }, {
 		group = self.augroup,
 		callback = function(g)
@@ -51,6 +54,7 @@ function M:init()
 			end
 		end,
 	})
+
 	setup_commands()
 	self:gather_buffers()
 	self.active = vim.api.nvim_get_current_buf()
@@ -72,7 +76,7 @@ end
 function M:get_buffer_display_name(buf_id)
 	local success, name = pcall(vim.api.nvim_buf_get_name, buf_id)
 	if not success then
-		vim.notify("Failed to get buffer name", vim.log.levels.ERROR)
+		vim.notify("[streamline] Failed to get buffer name", vim.log.levels.ERROR)
 		return "[No Name]"
 	end
 
@@ -85,7 +89,7 @@ end
 function M:create_buffer_entry(buf_id)
 	local success, buf_name = pcall(vim.api.nvim_buf_get_name, buf_id)
 	if not success then
-		vim.notify("Failed to get buffer name", vim.log.levels.ERROR)
+		vim.notify("[streamline] Failed to get buffer name", vim.log.levels.ERROR)
 		return nil
 	end
 
@@ -120,17 +124,37 @@ end
 local function is_empty_modified_buffer(buf_id)
 	local success, name = pcall(vim.api.nvim_buf_get_name, buf_id)
 	if not success then
-		vim.notify("Failed to get buffer name", vim.log.levels.ERROR)
+		vim.notify("[streamline] Failed to get buffer name", vim.log.levels.ERROR)
 		return false
 	end
-	local modified = vim.bo[buf_id].modified
-	local line_count = vim.api.nvim_buf_line_count(buf_id)
+	local modified
+	success, modified = pcall(function()
+		return vim.bo[buf_id].modified
+	end)
+	if not success then
+		vim.notify("[streamline] Failed to get buffer modified", vim.log.levels.ERROR)
+		return false
+	end
+	local line_count
+	success, line_count = pcall(function()
+		return vim.api.nvim_buf_line_count(buf_id)
+	end)
+	if not success then
+		return false
+	end
 	return name == "" and line_count <= 1 and not modified
 end
 
 function M:gather_buffers()
 	self.buffers = {}
-	for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
+	local success, buf_list = pcall(vim.api.nvim_list_bufs)
+	if not success then
+		vim.notify("[streamline] Failed to get buffer list", vim.log.levels.ERROR)
+		self:teardown()
+		return
+	end
+
+	for _, buf_id in ipairs(buf_list) do
 		if vim.api.nvim_buf_is_valid(buf_id) then
 			local bt = vim.bo[buf_id].buftype
 			if not vim.tbl_contains(self.ignore_buftypes, bt) then
@@ -182,7 +206,11 @@ end
 function M:on_buffer_removed(id)
 	for i, buf in ipairs(self.buffers) do
 		if buf.id == id then
-			table.remove(self.buffers, i)
+			local success, _ = pcall(table.remove, self.buffers, i)
+			if not success then
+				vim.notify("[streamline] Failed to remove buffer from list", vim.log.levels.ERROR)
+				self:gather_buffers()
+			end
 			if self.active == id then
 				self.active = nil
 			end
@@ -198,11 +226,10 @@ function M:on_buffer_entered(id)
 end
 
 function M:get_active_buffer()
+	if not self.active then
+		return nil
+	end
 	for _, buf in ipairs(self.buffers) do
-		if not self.active then
-			return nil
-		end
-
 		if buf.id == self.active then
 			return buf
 		end
@@ -229,7 +256,12 @@ function M:teardown()
 		self.augroup = nil
 	end
 	if debounce_timer then
-		debounce_timer:close()
+		local success, err = pcall(function()
+			debounce_timer:close()
+		end)
+		if not success then
+			vim.notify("[streamline] Failed to close debounce timer: " .. tostring(err), vim.log.levels.ERROR)
+		end
 		debounce_timer = nil
 	end
 end
