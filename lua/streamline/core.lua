@@ -57,6 +57,15 @@ local function get_buffer_display_name(buf_id)
 	return "[No Name]"
 end
 
+function M:create_buffer_entry(buf_id)
+	return {
+		id = buf_id,
+		name = vim.api.nvim_buf_get_name(buf_id),
+		display_name = get_buffer_display_name(buf_id),
+		modified = vim.api.nvim_buf_get_option(buf_id, "modified"),
+	}
+end
+
 function M:on_buffer_modified(buf_id, is_modified)
 	for _, buf in ipairs(self.buffers) do
 		if buf.id == buf_id then
@@ -79,12 +88,7 @@ function M:gather_buffers()
 		if vim.api.nvim_buf_is_valid(buf_id) then
 			local name = vim.api.nvim_buf_get_name(buf_id)
 			local display_name = get_buffer_display_name(buf_id)
-			table.insert(self.buffers, {
-				id = buf_id,
-				name = name,
-				display_name = display_name,
-				modified = vim.api.nvim_buf_get_option(buf_id, "modified"),
-			})
+			table.insert(self.buffers, self:create_buffer_entry(buf_id))
 		end
 	end
 end
@@ -103,12 +107,7 @@ function M:on_buffer_added(id)
 	end
 
 	if not self:has_buffer(id) then
-		table.insert(self.buffers, {
-			id = id,
-			name = vim.api.nvim_buf_get_name(id),
-			display_name = get_buffer_display_name(id),
-			modified = vim.api.nvim_buf_get_option(id, "modified"),
-		})
+		table.insert(self.buffers, self:create_buffer_entry(id))
 	end
 end
 
