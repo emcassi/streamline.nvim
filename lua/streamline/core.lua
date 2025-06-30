@@ -76,34 +76,35 @@ function M:on_buffer_modified(buf_id, is_modified)
 	end
 end
 
-function M:is_empty_modified_buffer(buf_id)
+local function is_empty_modified_buffer(buf_id)
 	local name = vim.api.nvim_buf_get_name(buf_id)
 	local modified = vim.api.nvim_buf_get_option(buf_id, "modified")
 	local line_count = vim.api.nvim_buf_line_count(buf_id)
-	local buftype = vim.api.nvim_buf_get_option(buf_id, "buftype")
-	return name == "" and line_count <= 1 and not modified and not self.ignore_buftypes[buftype]
+	return name == "" and line_count <= 1 and not modified
 end
 
 function M:gather_buffers()
 	self.buffers = {}
 	for _, buf_id in ipairs(vim.api.nvim_list_bufs()) do
 		if vim.api.nvim_buf_is_valid(buf_id) then
-			local name = vim.api.nvim_buf_get_name(buf_id)
-			local display_name = get_buffer_display_name(buf_id)
-			table.insert(self.buffers, self:create_buffer_entry(buf_id))
+			local bt = vim.api.nvim_buf_get_option(buf_id, "buftype")
+			if not vim.tbl_contains(self.ignore_buftypes, bt) then
+				local name = vim.api.nvim_buf_get_name(buf_id)
+				local display_name = get_buffer_display_name(buf_id)
+				table.insert(self.buffers, self:create_buffer_entry(buf_id))
+			end
 		end
 	end
 end
 
 function M:on_buffer_added(id)
+	local bt = vim.api.nvim_buf_get_option(id, "buftype")
+	if self.ignore_buftypes[bt] then
+		return
+	end
 	for i, buf in ipairs(self.buffers) do
 		if is_empty_modified_buffer(buf.id) then
-			self.buffers[i] = {
-				id = id,
-				name = vim.api.nvim_buf_get_name(id),
-				display_name = get_buffer_display_name(id),
-				modified = vim.api.nvim_buf_get_option(id, "modified"),
-			}
+			self.buffers[i] = self:create_buffer_entry(id)
 			return
 		end
 	end
@@ -178,7 +179,7 @@ function M:print_buffers()
 		local active_marker = (buf.id == self.active) and "->" or ""
 		local modified_marker = buf.modified and "* " or ""
 		message = message
-			.. string.format("%s%s%2d: [%2d] %s\n", active_marker, modified_marker, i, buf.id, buf.display_name)
+			.. string.format("%s %-3d [%2d] %-40s %s\n", active_marker, i, buf.id, buf.display_name, modified_marker)
 	end
 
 	if message == "" then
