@@ -3,16 +3,41 @@ local M = {}
 function M:print_buffers()
 	local message = ""
 	local core = require("streamline.core")
-	local active_idx = core:get_active_index()
-	if active_idx then
-		message = string.format("Active buffer: %d/%d\n", active_idx, #core.buffers)
+	local active_buf = core.active_buf
+	local previous_buf = core.previous_buf
+
+	local buffer_order = core.buffer_order
+	local buffers = core.buffers
+	print(vim.inspect(buffer_order))
+
+	if active_buf then
+		local active_index = core:get_buffer_index_from_id(active_buf.id)
+		message = string.format("Active buffer: %d/%d\n", active_index or 0, #buffer_order)
 	end
 
-	for i, buf in ipairs(core.buffers) do
-		local active_marker = (buf.id == core.active) and "->" or ""
-		local modified_marker = buf.modified and "* " or ""
-		message = message
-			.. string.format("%s %-3d [%2d] %-40s %s\n", active_marker, i, buf.id, buf.display_name, modified_marker)
+	if previous_buf then
+		local prev_index = core:get_buffer_index_from_id(previous_buf.id)
+		message = message .. string.format("Previous buffer: %d/%d\n", prev_index or 0, #buffer_order)
+	end
+
+	for i, buf_id in ipairs(buffer_order) do
+		local buf = buffers[buf_id]
+		if buf then
+			local active_marker = (active_buf and buf.id == active_buf.id) and "> " or ""
+			local previous_marker = (previous_buf and buf.id == previous_buf.id) and "~ " or ""
+			local modified_marker = buf.modified and "* " or ""
+
+			message = message
+				.. string.format(
+					"%s%s %-3d [%2d] %-40s %s\n",
+					active_marker,
+					previous_marker,
+					i,
+					buf.id,
+					buf.display_name,
+					modified_marker
+				)
+		end
 	end
 
 	if message == "" then
