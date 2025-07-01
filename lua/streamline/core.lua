@@ -1,5 +1,6 @@
 local M = {
 	buffers = {},
+	buffer_order = {},
 	active_buf = nil,
 	previous_buf = nil,
 	ignore_buftypes = { "quickfix", "nofile" },
@@ -82,24 +83,26 @@ function M:init()
 end
 
 function M:get_buffer_by_id(buf_id)
-	for _, buf in ipairs(self.buffers) do
-		if buf.id == buf_id then
-			return buf
-		end
-	end
-	return nil
+	return self.buffers[buf_id]
 end
 
 function M:get_buffers()
-	return self.buffers
+	local list = {}
+	for _, id in ipairs(self.buffer_order) do
+		if self.buffers[id] then
+			table.insert(list, self.buffers[id])
+		end
+	end
+	return list
 end
 
-function M:get_buffer_index_from_id(buf_id)
-	for i, b in ipairs(self.buffers) do
-		if b.id == buf_id then
+function M:get_buffer_index_from_id(id)
+	for i, buf_id in ipairs(self.buffer_order) do
+		if buf_id == id then
 			return i
 		end
 	end
+	return nil
 end
 
 function M:get_buffer_display_name(buf_id)
@@ -115,7 +118,7 @@ function M:get_buffer_display_name(buf_id)
 	return "[No Name]"
 end
 
-function M:create_buffer_entry(buf_id, index)
+function M:create_buffer_entry(buf_id)
 	local success, buf_name = pcall(vim.api.nvim_buf_get_name, buf_id)
 	if not success then
 		vim.notify("[streamline] Failed to get buffer name", vim.log.levels.ERROR)
@@ -125,9 +128,9 @@ function M:create_buffer_entry(buf_id, index)
 	return {
 		id = buf_id,
 		name = buf_name,
-		index = index,
 		display_name = self:get_buffer_display_name(buf_id),
 		modified = vim.bo[buf_id].modified,
+		index = #self.buffer_order + 1,
 	}
 end
 
@@ -142,12 +145,17 @@ function M:on_buffer_modified_debounced(buf_id, is_modified)
 	end, 200) -- 200ms delay
 end
 
-function M:on_buffer_modified(buf_id, is_modified)
-	for _, buf in ipairs(self.buffers) do
-		if buf.id == buf_id then
-			buf.modified = is_modified
-			break
+local function update_indices(self)
+	for i, buf_id in ipairs(self.buffer_order) do
+		if self.buffers[buf_id] then
+			self.buffers[buf_id].index = i
 		end
+	end
+end
+
+function M:on_buffer_modified(buf_id, is_modified)
+	if self.buffers[buf_id] then
+		self.buffers[buf_id].modified = is_modified
 	end
 end
 
@@ -177,6 +185,8 @@ end
 
 function M:gather_buffers()
 	self.buffers = {}
+	self.buffer_order = {}
+
 	local success, buf_list = pcall(vim.api.nvim_list_bufs)
 	if not success then
 		vim.notify("[streamline] Failed to get buffer list", vim.log.levels.ERROR)
@@ -184,20 +194,20 @@ function M:gather_buffers()
 		return
 	end
 
-	for i, buf_id in ipairs(buf_list) do
+	for _, buf_id in ipairs(buf_list) do
 		if vim.api.nvim_buf_is_valid(buf_id) then
 			local bt = vim.bo[buf_id].buftype
 			if not vim.tbl_contains(self.ignore_buftypes, bt) then
-				local new_buf = self:create_buffer_entry(buf_id, i)
+				local new_buf = self:create_buffer_entry(buf_id)
 				if new_buf then
-					if new_buf.id == vim.api.nvim_get_current_buf() then
-						self:set_active_buffer_by_index(new_buf.index)
-					end
-					table.insert(self.buffers, new_buf)
+					self:set_active_buffer_by_index()
+					table.insert(self.buffer_order, buf_id)
+					self.buffers[buf_id] = new_buf
 				end
 			end
 		end
 	end
+	update_indices(self)
 end
 
 function M:on_buffer_added(id)
@@ -205,20 +215,22 @@ function M:on_buffer_added(id)
 	if vim.tbl_contains(self.ignore_buftypes, bt) then
 		return
 	end
-	for i, buf in ipairs(self.buffers) do
-		if is_empty_modified_buffer(buf.id) then
-			local new_buf = self:create_buffer_entry(id, i)
-			if new_buf then
-				self.buffers[i] = new_buf
-			end
+
+	for buf_id, buf in pairs(self.buffers) do
+		if is_empty_modified_buffer(buf_id) then
+			self.buffers[buf_id] = self:create_buffer_entry(id)
+			self.buffer_order[buf.index] = id
+			update_indices(self)
 			return
 		end
 	end
 
-	if not self:has_buffer(id) then
-		local new_buf = self:create_buffer_entry(id, #self.buffers + 1)
+	if not self.buffers[id] then
+		local new_buf = self:create_buffer_entry(id)
 		if new_buf then
-			table.insert(self.buffers, new_buf)
+			self.buffers[id] = new_buf
+			table.insert(self.buffer_order, id)
+			update_indices(self)
 		end
 	end
 end
@@ -227,50 +239,64 @@ function M:has_buffer(id)
 	return self:get_buffer_by_id(id) ~= nil
 end
 
+function M:get_buffer(buf_id)
+	return self.buffers[buf_id]
+end
+
+function M:get_buffer_at_index(index)
+	local buf_id = self.buffer_order[index]
+	return buf_id and self.buffers[buf_id] or nil
+end
+
+function M:get_active_index()
+	return self.active_buf and self.active_buf.index or nil
+end
+
 function M:clean_empty_buffers()
-	for i = #self.buffers, 1, -1 do
-		local buf = self.buffers[i]
-		if is_empty_modified_buffer(buf.id) then
+	for i = #self.buffer_order, 1, -1 do
+		local buf_id = self.buffer_order[i]
+		if is_empty_modified_buffer(buf_id) then
+			self.buffers[buf_id] = nil
 			table.remove(self.buffers, i)
 		end
 	end
 end
 
 function M:on_buffer_removed(id)
-	for i, buf in ipairs(self.buffers) do
-		if buf.id == id then
-			local success, _ = pcall(table.remove, self.buffers, i)
-			if not success then
-				vim.notify("[streamline] Failed to remove buffer from list", vim.log.levels.ERROR)
-				self:gather_buffers()
-			end
-			if self.active_buf and self.active_buf.id == id then
-				self:set_active_buffer(nil)
-			end
-			if self.previous_buf and self.previous_buf.id == id then
-				self:set_previous_buffer(nil)
-			end
-			return
+	if self.buffers[id] then
+		local index = self:get_buffer_index_from_id(id)
+		table.remove(self.buffer_order, index)
+		self.buffers[id] = nil
+
+		if self.active_buf and self.active_buf.id == id then
+			self.previous_buf = self.active_buf
+			self.active_buf = nil
 		end
+
+		if self.previous_buf and self.previous_buf.id == id then
+			self.previous_buf = nil
+		end
+
+		update_indices(self)
 	end
 end
 
 function M:on_buffer_entered(id)
 	if self.navigating then
 		self.navigating = false
-		local index = self:get_buffer_index_from_id(id)
-		if index then
-			self:set_active_buffer_by_index(index)
-		end
-		return
 	end
 
-	if vim.api.nvim_buf_is_valid(id) then
-		self:set_previous_buffer(self:get_active_buffer())
-		local index = self:get_buffer_index_from_id(id)
-		if index then
-			self:set_active_buffer_by_index(index)
+	local success, is_valid = pcall(vim.api.nvim_buf_is_valid, id)
+	if success and is_valid and self.buffers[id] then
+		local buf = self.buffers[id]
+		if self.active_buf and self.active_buf.id ~= id then
+			self.previous_buf = self.active_buf
+		elseif not self.active_buf then
+			self.active_buf = nil
 		end
+
+		buf.index = self:get_buffer_index_from_id(id)
+		self:set_active_buffer(buf)
 	end
 end
 
@@ -279,72 +305,59 @@ function M:set_active_buffer(buf)
 end
 
 function M:set_active_buffer_by_index(index)
-	local buf = nil
-	for _, b in ipairs(self.buffers) do
-		if b.index == index then
-			buf = b
-			break
-		end
+	local buf_id = self.buffer_order[index]
+	if buf_id then
+		local buf = self.buffers[buf_id]
+		self:set_active_buffer(buf)
 	end
-	self:set_active_buffer(buf)
-end
-
-function M:get_active_buffer()
-	return self.active_buf
-end
-
-function M:get_previous_buffer()
-	return self.previous_buf
-end
-
-function M:set_previous_buffer(buf)
-	self.previous_buf = buf
 end
 
 function M:navigate_backward()
-	if self:get_active_buffer() == nil then
+	if self.active_buf == nil then
 		return
 	end
 
-	local index = self:get_buffer_index_from_id(self:get_active_buffer().id)
+	local index = self:get_buffer_index_from_id(self.active_buf.id)
 	if index == 1 then
-		self:navigate_to_index(#self.buffers)
+		self:navigate_to_index(#self.buffer_order)
 	elseif index > 1 then
 		self:navigate_to_index(index - 1)
 	end
 end
 
 function M:navigate_forward()
-	if self:get_active_buffer() == nil then
+	if self.active_buf == nil then
 		return
 	end
 
-	local index = self:get_buffer_index_from_id(self:get_active_buffer().id)
-	if index == #self.buffers then
+	local index = self:get_buffer_index_from_id(self.active_buf.id)
+	if index == #self.buffer_order then
 		self:navigate_to_index(1)
-	elseif index < #self.buffers then
+	elseif index < #self.buffer_order then
 		self:navigate_to_index(index + 1)
 	end
 end
 
 function M:navigate_to_index(index)
-	if not index or index < 1 or index > #self.buffers then
+	if not index or index < 1 or index > #self.buffer_order then
 		return
 	end
 
-	local new_buf = self.buffers[index]
-	if not new_buf then
+	local new_buf_id = self.buffer_order[index]
+	if not new_buf_id then
 		return
 	end
 
 	self.navigating = true
 
-	if self.active_buf and self.active_buf.id ~= new_buf.id then
-		self:set_previous_buffer(self.active_buf)
+	if self.active_buf and self.active_buf.id ~= new_buf_id then
+		self.previous_buf = self.active_buf
 	end
 
+	local new_buf = self.buffers[new_buf_id]
 	self.active_buf = new_buf
-	vim.api.nvim_set_current_buf(new_buf.id)
+	self.active_buf.index = index
+	vim.api.nvim_set_current_buf(new_buf_id)
 end
 
 function M:navigate_to_previous()
