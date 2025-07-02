@@ -32,6 +32,97 @@ local function setup_commands(m)
 			vim.notify("[streamline] Invalid index", vim.log.levels.ERROR)
 		end
 	end, { desc = "Navigate to buffer at index", nargs = 1 })
+
+	vim.api.nvim_create_user_command("StreamSwapBufferBefore", function()
+		m:swap_buffer_before()
+	end, { desc = "Swap buffer with previous buffer" })
+
+	vim.api.nvim_create_user_command("StreamSwapBufferAfter", function()
+		m:swap_buffer_after()
+	end, { desc = "Swap buffer with next buffer" })
+
+	vim.api.nvim_create_user_command("StreamSwapBufferWith", function(args)
+		local buf_index = tonumber(args.args)
+		if buf_index then
+			m:swap_buffer_with(buf_index)
+		else
+			vim.notify("[streamline] Invalid buffer id", vim.log.levels.ERROR)
+		end
+	end, { desc = "Swap buffer with buffer at index", nargs = 1 })
+
+	vim.api.nvim_create_user_command("StreamReinsertBufferBeforeIndex", function(args)
+		local fargs = args.fargs
+		if #fargs < 2 then
+			vim.notify("[streamline] Expected two arguments: current_index target_index", vim.log.levels.ERROR)
+			return
+		end
+
+		local buf_index = tonumber(fargs[1])
+		local target_buf_index = tonumber(fargs[2])
+
+		if buf_index and target_buf_index then
+			m:reinsert_buffer_before_index(buf_index, target_buf_index)
+		else
+			vim.notify("[streamline] Invalid buffer indexes", vim.log.levels.ERROR)
+		end
+	end, {
+		desc = "Re-insert buffer before index",
+		nargs = "+",
+	})
+
+	vim.api.nvim_create_user_command("StreamReinsertBufferAfterIndex", function(args)
+		local fargs = args.fargs or {}
+		if #fargs < 2 then
+			vim.notify("[streamline] Expected two arguments: current_index target_index", vim.log.levels.ERROR)
+			return
+		end
+
+		local buf_index = tonumber(fargs[1])
+		local target_buf_index = tonumber(fargs[2])
+
+		if buf_index and target_buf_index then
+			m:reinsert_buffer_after_index(buf_index, target_buf_index)
+		else
+			vim.notify("[streamline] Invalid buffer indexes", vim.log.levels.ERROR)
+		end
+	end, { desc = "Re-insert buffer after index", nargs = "+" })
+
+	vim.api.nvim_create_user_command("StreamReinsertBufferBeforeById", function(args)
+		local fargs = args.fargs or {}
+		if #fargs < 2 then
+			vim.notify("[streamline] Expected two arguments: current_id target_id", vim.log.levels.ERROR)
+			return
+		end
+
+		local buf_id = tonumber(fargs[1])
+		local target_buf_id = tonumber(fargs[2])
+
+		if buf_id and target_buf_id then
+			m:reinsert_buffer_before_id(buf_id, target_buf_id)
+		else
+			vim.notify("[streamline] Invalid buffer ids", vim.log.levels.ERROR)
+		end
+	end, {
+		desc = "Re-insert buffer before id",
+		nargs = "+",
+	})
+
+	vim.api.nvim_create_user_command("StreamReinsertBufferAfterById", function(args)
+		local fargs = args.fargs or {}
+		if #fargs < 2 then
+			vim.notify("[streamline] Expected two arguments: current_id target_id", vim.log.levels.ERROR)
+			return
+		end
+
+		local buf_id = tonumber(fargs[1])
+		local target_buf_id = tonumber(fargs[2])
+
+		if buf_id and target_buf_id then
+			m:reinsert_buffer_after_id(buf_id, target_buf_id)
+		else
+			vim.notify("[streamline] Invalid buffer ids", vim.log.levels.ERROR)
+		end
+	end, { desc = "Re-insert buffer after id", nargs = "+" })
 end
 
 function M:init()
@@ -151,6 +242,9 @@ local function update_indices(self)
 			self.buffers[buf_id].index = i
 		end
 	end
+
+	self.active_buf = self.buffers[self.active_buf.id]
+	self.previous_buf = self.buffers[self.previous_buf.id]
 end
 
 function M:on_buffer_modified(buf_id, is_modified)
@@ -372,6 +466,128 @@ function M:navigate_to_previous()
 	else
 		vim.notify("[streamline] Previous buffer no longer in list", vim.log.levels.WARN)
 	end
+end
+
+function M:reinsert_buffer_before_index(buf_index, target_buf_index)
+	if buf_index == target_buf_index then
+		return
+	end
+
+	if not self.buffer_order[buf_index] then
+		return
+	end
+
+	if not self.buffer_order[target_buf_index] then
+		return
+	end
+
+	local buf_id = self.buffer_order[buf_index]
+
+	local new_index = target_buf_index - 1
+	if new_index < 1 then
+		new_index = 1
+	end
+
+	table.remove(self.buffer_order, buf_index)
+	table.insert(self.buffer_order, new_index, buf_id)
+	update_indices(self)
+end
+
+function M:reinsert_buffer_after_index(buf_index, target_buf_index)
+	if buf_index == target_buf_index then
+		return
+	end
+
+	if not self.buffer_order[buf_index] then
+		return
+	end
+
+	if not self.buffer_order[target_buf_index] then
+		return
+	end
+
+	local buf_id = self.buffer_order[buf_index]
+	local new_index = target_buf_index + 1
+	if new_index > #self.buffer_order then
+		new_index = #self.buffer_order
+	end
+
+	table.remove(self.buffer_order, buf_index)
+	table.insert(self.buffer_order, new_index, buf_id)
+	update_indices(self)
+end
+
+function M:reinsert_buffer_before_id(buf_id, target_buf_id)
+	if self.buffers[buf_id] and self.buffers[target_buf_id] then
+		self:reinsert_buffer_before_index(
+			self:get_buffer_index_from_id(buf_id),
+			self:get_buffer_index_from_id(target_buf_id)
+		)
+	end
+end
+
+function M:reinsert_buffer_after_id(buf_id, target_buf_id)
+	if self.buffers[buf_id] and self.buffers[target_buf_id] then
+		self:reinsert_buffer_after_index(
+			self:get_buffer_index_from_id(buf_id),
+			self:get_buffer_index_from_id(target_buf_id)
+		)
+	end
+end
+
+function M:swap_buffer_before()
+	if not self.active_buf then
+		return
+	end
+
+	local current_index = self:get_buffer_index_from_id(self.active_buf.id)
+	local target_index = current_index - 1
+
+	if target_index == 0 then
+		target_index = #self.buffer_order
+	end
+
+	self:swap_buffer_with(current_index, target_index)
+end
+
+function M:swap_buffer_after()
+	if not self.active_buf then
+		return
+	end
+
+	local current_index = self:get_buffer_index_from_id(self.active_buf.id)
+	local target_index = current_index + 1
+
+	if target_index > #self.buffer_order then
+		target_index = 1
+	end
+
+	self:swap_buffer_with(current_index, target_index)
+end
+
+function M:swap_buffer_with(buf_index, target_buf_index)
+	if buf_index == target_buf_index then
+		return
+	end
+
+	if not self.buffer_order[buf_index] then
+		return
+	end
+
+	if not self.buffer_order[target_buf_index] then
+		return
+	end
+
+	local buf_id = self.buffer_order[buf_index]
+	local target_buf_id = self.buffer_order[target_buf_index]
+
+	self.buffer_order[buf_index] = target_buf_id
+	self.buffer_order[target_buf_index] = buf_id
+
+	self.active_buf = self.buffers[self.active_buf.id]
+	self.previous_buf = self.buffers[self.previous_buf.id]
+
+	update_indices(self)
 end
 
 function M:teardown()
