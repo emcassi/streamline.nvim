@@ -8,7 +8,6 @@ function M:print_buffers()
 
 	local buffer_order = core.buffer_order
 	local buffers = core.buffers
-	print(vim.inspect(buffer_order))
 
 	if active_buf then
 		local active_index = core:get_buffer_index_from_id(active_buf.id)
