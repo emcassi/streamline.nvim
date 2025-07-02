@@ -121,8 +121,8 @@ Commands:
 | Feature                      | MVP  | Polish |
 | ---------------------------- | ---- | ------ |
 | Ordered buffer list          | ✅   |        |
-| Navigation by position/index | ⬜   |        |
-| Reordering buffers           | ⬜   |        |
+| Navigation by position/index | ✅   |        |
+| Reordering buffers           | ✅   |        |
 | Custom insert behavior       | ⬜   |        |
 | Optional UI tabline          | ⬜   |        |
 | Buffer pinning               |       | ⬜    |
