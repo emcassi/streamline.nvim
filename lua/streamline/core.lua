@@ -243,8 +243,12 @@ local function update_indices(self)
 		end
 	end
 
-	self.active_buf = self.buffers[self.active_buf.id]
-	self.previous_buf = self.buffers[self.previous_buf.id]
+	if self.active_buf then
+		self.active_buf = self.buffers[self.active_buf.id]
+	end
+	if self.previous_buf then
+		self.previous_buf = self.buffers[self.previous_buf.id]
+	end
 end
 
 function M:on_buffer_modified(buf_id, is_modified)
