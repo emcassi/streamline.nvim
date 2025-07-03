@@ -2,20 +2,20 @@ local M = {}
 
 function M:print_buffers()
 	local message = ""
-	local core = require("streamline.core")
-	local active_buf = core.active_buf
-	local previous_buf = core.previous_buf
+	local core = require("streamline.core.core")
+	local active_buf = core:get_active_buf()
+	local previous_buf = core:get_previous_buf()
 
 	local buffer_order = core.buffer_order
 	local buffers = core.buffers
 
 	if active_buf then
-		local active_index = core:get_buffer_index_from_id(active_buf.id)
+		local active_index = active_buf.index
 		message = string.format("Active buffer: %d/%d\n", active_index or 0, #buffer_order)
 	end
 
 	if previous_buf then
-		local prev_index = core:get_buffer_index_from_id(previous_buf.id)
+		local prev_index = previous_buf.index
 		message = message .. string.format("Previous buffer: %d/%d\n", prev_index or 0, #buffer_order)
 	end
 

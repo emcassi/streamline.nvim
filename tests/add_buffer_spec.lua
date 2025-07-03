@@ -4,7 +4,8 @@ local test_helpers = require("tests.test_helpers")
 local add_buffer = test_helpers.add_buffer
 
 describe("Streamline add / remove buffers", function()
-	local core = require("streamline.core")
+	local core = require("streamline.core.core")
+	local buffer_state = require("streamline.core.buffer_state")
 
 	before_each(function()
 		test_helpers.reset_for_test(core)
@@ -17,7 +18,7 @@ describe("Streamline add / remove buffers", function()
 		assert.is_true(vim.api.nvim_buf_is_valid(buf_id))
 
 		vim.api.nvim_buf_set_name(buf_id, "test")
-		core:on_buffer_added(buf_id)
+		buffer_state:on_buffer_added(buf_id)
 
 		assert.is_true(core.buffers[buf_id] ~= nil)
 		assert.is_true(vim.tbl_contains(core.buffer_order, buf_id))
@@ -27,7 +28,7 @@ describe("Streamline add / remove buffers", function()
 		local buf_id = add_buffer("test")
 		test_helpers.track_buffer(buf_id)
 		assert.is_true(vim.api.nvim_buf_is_valid(buf_id))
-		core:on_buffer_added(buf_id)
+		buffer_state:on_buffer_added(buf_id)
 		local initial_length = #core.buffer_order
 
 		local buf1_name = vim.api.nvim_buf_get_name(buf_id)
@@ -44,7 +45,7 @@ describe("Streamline add / remove buffers", function()
 		assert.is_true(vim.api.nvim_buf_is_valid(buf_id))
 
 		vim.api.nvim_buf_set_name(buf_id, "test")
-		core:on_buffer_added(buf_id)
+		buffer_state:on_buffer_added(buf_id)
 
 		assert.is_true(core.buffers[buf_id] == nil)
 		assert.is_false(vim.tbl_contains(core.buffer_order, buf_id))
@@ -56,7 +57,7 @@ describe("Streamline add / remove buffers", function()
 		assert.is_true(vim.api.nvim_buf_is_valid(buf_id))
 
 		vim.api.nvim_buf_set_name(buf_id, "test")
-		core:on_buffer_removed(buf_id)
+		buffer_state:on_buffer_removed(buf_id)
 
 		assert.is_true(core.buffers[buf_id] == nil)
 		assert.is_false(vim.tbl_contains(core.buffer_order, buf_id))
@@ -73,7 +74,7 @@ describe("Streamline add / remove buffers", function()
 		local buf2 = core.buffers[buf2_id]
 		core.active_buf = buf2
 
-		core:on_buffer_removed(core.active_buf)
+		buffer_state:on_buffer_removed(core.active_buf)
 
 		assert.is_true(core.buffers[buf2_id] == nil)
 		assert.is_false(vim.tbl_contains(core.buffer_order, buf2_id))
@@ -82,14 +83,14 @@ describe("Streamline add / remove buffers", function()
 	it("deletes a buffer that was just inserted", function()
 		local buf1_id = add_buffer("test1")
 		test_helpers.track_buffer(buf1_id)
-		core:on_buffer_added(buf1_id)
+		buffer_state:on_buffer_added(buf1_id)
 
 		local buf2_id = add_buffer("test2")
 		test_helpers.track_buffer(buf2_id)
-		core:on_buffer_added(buf2_id)
-		core:on_buffer_entered(buf2_id)
+		buffer_state:on_buffer_added(buf2_id)
+		buffer_state:on_buffer_entered(buf2_id)
 
-		core:on_buffer_removed(buf2_id)
+		buffer_state:on_buffer_removed(buf2_id)
 
 		assert.is_true(core.buffers[buf2_id] == nil)
 		assert.is_false(vim.tbl_contains(core.buffer_order, buf2_id))
