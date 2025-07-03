@@ -190,15 +190,6 @@ function M:get_buffers()
 	return list
 end
 
-function M:get_buffer_index_from_id(id)
-	for i, buf_id in ipairs(self.buffer_order) do
-		if buf_id == id then
-			return i
-		end
-	end
-	return nil
-end
-
 function M:get_buffer_display_name(buf_id)
 	local success, name = pcall(vim.api.nvim_buf_get_name, buf_id)
 	if not success then
@@ -325,11 +316,10 @@ function M:on_buffer_added(buf_id)
 		elseif self.config.default_insert_behavior == "end" then
 			table.insert(self.buffer_order, buf_id)
 		elseif self.config.default_insert_behavior == "before" then
-			local target_index = self.active_buf and self:get_buffer_index_from_id(self.active_buf.id) or 1
+			local target_index = self.active_buf and self.active_buf.index or 1
 			table.insert(self.buffer_order, target_index, buf_id)
 		elseif self.config.default_insert_behavior == "after" then
-			local target_index = self.active_buf and self:get_buffer_index_from_id(self.active_buf.id) + 1
-				or #self.buffer_order + 1
+			local target_index = self.active_buf and self.active_buf.index + 1 or #self.buffer_order + 1
 			table.insert(self.buffer_order, target_index, buf_id)
 		end
 		update_indices(self)
@@ -365,7 +355,7 @@ end
 
 function M:on_buffer_removed(id)
 	if self.buffers[id] then
-		local index = self:get_buffer_index_from_id(id)
+		local index = self.buffers[id].index
 		table.remove(self.buffer_order, index)
 		self.buffers[id] = nil
 
@@ -396,7 +386,7 @@ function M:on_buffer_entered(id)
 			self.active_buf = nil
 		end
 
-		buf.index = self:get_buffer_index_from_id(id)
+		buf.index = self.buffers[id].index
 		self:set_active_buffer(buf)
 	end
 end
@@ -418,7 +408,7 @@ function M:navigate_backward()
 		return
 	end
 
-	local index = self:get_buffer_index_from_id(self.active_buf.id)
+	local index = self.active_buf.index
 	if index == 1 then
 		self:navigate_to_index(#self.buffer_order)
 	elseif index > 1 then
@@ -431,7 +421,7 @@ function M:navigate_forward()
 		return
 	end
 
-	local index = self:get_buffer_index_from_id(self.active_buf.id)
+	local index = self.active_buf.index
 	if index == #self.buffer_order then
 		self:navigate_to_index(1)
 	elseif index < #self.buffer_order then
@@ -467,7 +457,7 @@ function M:navigate_to_previous()
 		return
 	end
 
-	local prev_index = self:get_buffer_index_from_id(self.previous_buf.id)
+	local prev_index = self.previous_buf.index
 	if prev_index then
 		self:navigate_to_index(prev_index)
 	else
@@ -521,19 +511,13 @@ end
 
 function M:reinsert_buffer_before_id(buf_id, target_buf_id)
 	if self.buffers[buf_id] and self.buffers[target_buf_id] then
-		self:reinsert_buffer_before_index(
-			self:get_buffer_index_from_id(buf_id),
-			self:get_buffer_index_from_id(target_buf_id)
-		)
+		self:reinsert_buffer_before_index(self.buffers[buf_id].index, self.buffers[target_buf_id].index)
 	end
 end
 
 function M:reinsert_buffer_after_id(buf_id, target_buf_id)
 	if self.buffers[buf_id] and self.buffers[target_buf_id] then
-		self:reinsert_buffer_after_index(
-			self:get_buffer_index_from_id(buf_id),
-			self:get_buffer_index_from_id(target_buf_id)
-		)
+		self:reinsert_buffer_after_index(self.buffers[buf_id].index, self.buffers[target_buf_id].index)
 	end
 end
 
@@ -542,7 +526,7 @@ function M:swap_buffer_before()
 		return
 	end
 
-	local current_index = self:get_buffer_index_from_id(self.active_buf.id)
+	local current_index = self.active_buf.index
 	local target_index = current_index - 1
 
 	if target_index == 0 then
@@ -557,7 +541,7 @@ function M:swap_buffer_after()
 		return
 	end
 
-	local current_index = self:get_buffer_index_from_id(self.active_buf.id)
+	local current_index = self.active_buf.index
 	local target_index = current_index + 1
 
 	if target_index > #self.buffer_order then
