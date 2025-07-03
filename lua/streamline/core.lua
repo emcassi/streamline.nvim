@@ -5,6 +5,9 @@ local M = {
 	previous_buf = nil,
 	ignore_buftypes = { "quickfix", "nofile" },
 	navigating = false,
+	config = {
+		default_insert_behavior = "end",
+	},
 }
 
 local function setup_commands(m)
