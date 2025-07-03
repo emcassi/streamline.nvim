@@ -29,13 +29,13 @@ describe("Streamline add / remove buffers", function()
 		test_helpers.track_buffer(buf_id)
 		assert.is_true(vim.api.nvim_buf_is_valid(buf_id))
 		buffer_state:on_buffer_added(buf_id)
-		local initial_length = #core.buffer_order
+		local initial_length = core:get_num_buffers()
 
 		local buf1_name = vim.api.nvim_buf_get_name(buf_id)
 		local buf2_id = vim.api.nvim_create_buf(true, false)
 		local success, _ = pcall(vim.api.nvim_buf_set_name, buf2_id, buf1_name)
 		assert.is_false(success)
-		assert.is_equal(initial_length, #core.buffer_order)
+		assert.is_equal(initial_length, core:get_num_buffers())
 	end)
 
 	it("adds a scratch buffer to the list", function()

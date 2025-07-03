@@ -72,7 +72,7 @@ function M:create_buffer_entry(buf_id)
 		name = buf_name,
 		display_name = self:get_buffer_display_name(buf_id),
 		modified = vim.bo[buf_id].modified,
-		index = #core:get_buffer_order() + 1,
+		index = core:get_num_buffers() + 1,
 	}
 end
 
@@ -142,7 +142,7 @@ function M:on_buffer_added(buf_id)
 			local target_index = core.active_buf and core.active_buf.index or 1
 			core:insert_buffer_at_index(new_buf, target_index)
 		elseif config.default_insert_behavior == "after" then
-			local target_index = core.active_buf and core.active_buf.index + 1 or #core.buffer_order + 1
+			local target_index = core.active_buf and core.active_buf.index + 1 or core:get_num_buffers() + 1
 			core:insert_buffer_at_index(new_buf, target_index)
 		end
 		self:update_indices()
@@ -163,7 +163,7 @@ function M:get_active_index()
 end
 
 function M:clean_empty_buffers()
-	for i = #core.buffer_order, 1, -1 do
+	for i = core:get_num_buffers(), 1, -1 do
 		local buf_id = core.buffer_order[i]
 		if is_empty_modified_buffer(buf_id) then
 			core:set_buffer(buf_id, nil)

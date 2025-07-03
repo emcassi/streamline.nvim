@@ -27,6 +27,10 @@ function M:get_buffer_order()
 	return self.buffer_order
 end
 
+function M:get_num_buffers()
+	return #self.buffer_order
+end
+
 function M:get_buffer_by_id(buf_id)
 	return self.buffers[buf_id]
 end
@@ -93,6 +97,11 @@ end
 
 function M:insert_buffer_at_end(buf)
 	table.insert(self.buffer_order, buf.id)
+end
+
+function M:remove_from_buffer_order(buf_id)
+	local index = self.buffers[buf_id].index
+	self:remove_buffer_at_index(index)
 end
 
 function M:remove_buffer_by_id(buf_id)

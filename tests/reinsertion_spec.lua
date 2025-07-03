@@ -61,7 +61,7 @@ describe("Streamline reinsert buffers", function()
 
 		reordering:reinsert_buffer_before_index(2, 1)
 
-		assert.is_equal(core.active_buf.id, buf2_id)
+		assert.is_equal(core:get_active_buf().id, buf2_id)
 		assert.is_equal(core.buffer_order[1], buf2_id)
 		assert.is_equal(core.buffer_order[2], buf1_id)
 	end)

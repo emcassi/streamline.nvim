@@ -9,7 +9,7 @@ function M:navigate_backward()
 
 	local index = core:get_active_buf_index()
 	if index == 1 then
-		self:navigate_to_index(#core:get_buffer_order())
+		self:navigate_to_index(core:get_num_buffers())
 	elseif index > 1 then
 		self:navigate_to_index(index - 1)
 	end
@@ -21,15 +21,15 @@ function M:navigate_forward()
 	end
 
 	local index = core.active_buf.index
-	if index == #core:get_buffer_order() then
+	if index == core:get_num_buffers() then
 		self:navigate_to_index(1)
-	elseif index < #core:get_buffer_order() then
+	elseif index < core:get_num_buffers() then
 		self:navigate_to_index(index + 1)
 	end
 end
 
 function M:navigate_to_index(index)
-	if not index or index < 1 or index > #core:get_buffer_order() then
+	if not index or index < 1 or index > core:get_num_buffers() then
 		return
 	end
 
