@@ -38,10 +38,10 @@ function M:navigate_to_index(index)
 		return
 	end
 
-	core.navigating = true
+	core:set_is_navigating(true)
 
-	if core.active_buf and core.active_buf.id ~= new_buf_id then
-		core.previous_buf = core.active_buf
+	if core:get_active_buf() and core:get_active_buf_index() ~= new_buf_id then
+		core.set_previous_buf(core:get_active_buf())
 	end
 
 	local new_buf = core:get_buffer_by_id(new_buf_id)
