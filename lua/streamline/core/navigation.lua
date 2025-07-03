@@ -7,9 +7,9 @@ function M:navigate_backward()
 		return
 	end
 
-	local index = core.active_buf.index
+	local index = core:get_active_buf_index()
 	if index == 1 then
-		self:navigate_to_index(#core.buffer_order)
+		self:navigate_to_index(#core:get_buffer_order())
 	elseif index > 1 then
 		self:navigate_to_index(index - 1)
 	end
@@ -21,19 +21,19 @@ function M:navigate_forward()
 	end
 
 	local index = core.active_buf.index
-	if index == #core.buffer_order then
+	if index == #core:get_buffer_order() then
 		self:navigate_to_index(1)
-	elseif index < #core.buffer_order then
+	elseif index < #core:get_buffer_order() then
 		self:navigate_to_index(index + 1)
 	end
 end
 
 function M:navigate_to_index(index)
-	if not index or index < 1 or index > #core.buffer_order then
+	if not index or index < 1 or index > #core:get_buffer_order() then
 		return
 	end
 
-	local new_buf_id = core.buffer_order[index]
+	local new_buf_id = core:get_buffer_by_index(index).id
 	if not new_buf_id then
 		return
 	end
@@ -44,9 +44,9 @@ function M:navigate_to_index(index)
 		core.previous_buf = core.active_buf
 	end
 
-	local new_buf = core.buffers[new_buf_id]
-	core.active_buf = new_buf
-	core.active_buf.index = index
+	local new_buf = core:get_buffer_by_id(new_buf_id)
+	core:set_active_buffer(new_buf)
+	core:set_active_buffer_index(index)
 	vim.api.nvim_set_current_buf(new_buf_id)
 end
 

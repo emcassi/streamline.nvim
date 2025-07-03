@@ -40,8 +40,16 @@ function M:get_active_buf()
 	return self.active_buf
 end
 
+function M:get_active_buf_index()
+	return self.active_buf and self.active_buf.index
+end
+
 function M:set_active_buffer(buf)
 	self.active_buf = buf
+end
+
+function M:set_active_buffer_index(index)
+	self.active_buf = self.buffers[self.buffer_order[index]]
 end
 
 function M:set_active_buffer_by_index(index)
@@ -92,16 +100,24 @@ function M:remove_buffer_by_id(buf_id)
 		local index = self.buffers[buf_id].index
 		self:remove_buffer_at_index(index)
 	end
-	if vim.api.nvim_buf_is_valid(buf_id) then
-		vim.api.nvim_buf_delete(buf_id, { force = true })
-	end
 end
 
 function M:remove_buffer_at_index(index)
-	if vim.api.nvim_buf_is_valid(self.buffer_order[index]) then
-		vim.api.nvim_buf_delete(self.buffer_order[index], { force = true })
+	local buf_id = self.buffer_order[index]
+
+	if not vim.api.nvim_buf_is_valid(buf_id) then
+		return
 	end
-	self.buffers[self.buffer_order[index]] = nil
+
+	if vim.api.nvim_get_current_buf() == buf_id then
+		vim.defer_fn(function()
+			self.buffers[buf_id] = nil
+		end, 10)
+	else
+		vim.api.nvim_buf_delete(buf_id, { force = true })
+	end
+
+	self.buffers[buf_id] = nil
 	table.remove(self.buffer_order, index)
 end
 

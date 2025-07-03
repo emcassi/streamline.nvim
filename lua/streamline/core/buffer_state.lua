@@ -20,19 +20,20 @@ end
 
 function M:on_buffer_modified(buf_id, is_modified)
 	if core.buffers[buf_id] then
-		core.get_buffer_by_id(buf_id).modified = is_modified
+		core:get_buffer_by_id(buf_id).modified = is_modified
 	end
 end
 
 local debounce_timer = nil
 function M:on_buffer_modified_debounced(buf_id, is_modified)
-	if debounce_timer then
+	if debounce_timer and not debounce_timer:is_closing() then
 		debounce_timer:close()
 	end
+
 	debounce_timer = vim.defer_fn(function()
 		self:on_buffer_modified(buf_id, is_modified)
 		debounce_timer = nil
-	end, 200) -- 200ms delay
+	end, 200)
 end
 
 local function is_empty_modified_buffer(buf_id)
@@ -91,14 +92,14 @@ function M:gather_buffers()
 	local success, buf_list = pcall(vim.api.nvim_list_bufs)
 	if not success then
 		vim.notify("[streamline] Failed to get buffer list", vim.log.levels.ERROR)
-		self:teardown()
+		core:teardown()
 		return
 	end
 
 	for _, buf_id in ipairs(buf_list) do
 		if vim.api.nvim_buf_is_valid(buf_id) then
 			local bt = vim.bo[buf_id].buftype
-			if not vim.tbl_contains(core.ignore_buftypes, bt) then
+			if not core:should_ignore_buftype(bt) then
 				local new_buf = self:create_buffer_entry(buf_id)
 				if new_buf then
 					core:set_active_buffer_by_index(new_buf.index)
@@ -209,14 +210,8 @@ function M:on_buffer_entered(id)
 end
 
 function M:teardown()
-	if debounce_timer then
-		local success, err = pcall(function()
-			debounce_timer:close()
-		end)
-		if not success then
-			vim.notify("[streamline] Failed to close debounce timer: " .. tostring(err), vim.log.levels.ERROR)
-		end
-		debounce_timer = nil
+	if debounce_timer and not debounce_timer:is_closing() then
+		debounce_timer:close()
 	end
 end
 
