@@ -1,6 +1,6 @@
 local M = {}
 
-local core = require("streamline.core")
+local core = require("streamline.core.core")
 
 function M.setup(opts)
 	opts = opts or {}
