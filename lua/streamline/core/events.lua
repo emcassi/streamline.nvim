@@ -29,7 +29,7 @@ function M:register_events()
 		group = core.augroup,
 		callback = function(args)
 			local buf_id = args.buf
-			if core.buffers[buf_id] then
+			if core:get_buffer_by_id(buf_id) then
 				local is_modified = vim.bo[buf_id].modified
 				buffer_state:on_buffer_modified_debounced(buf_id, is_modified)
 			end
@@ -39,8 +39,8 @@ function M:register_events()
 	vim.api.nvim_create_autocmd({ "BufFilePost" }, {
 		group = core.augroup,
 		callback = function(args)
-			if core.buffers[args.buf] then
-				core.buffers[args.buf].display_name = core:get_buffer_display_name(args.buf)
+			if core:get_buffer_by_id(args.buf) then
+				core:get_buffer_by_id(args.buf).display_name = core:get_buffer_display_name(args.buf)
 			end
 		end,
 	})
