@@ -480,22 +480,17 @@ function M:reinsert_buffer_before_index(buf_index, target_buf_index)
 		return
 	end
 
-	if not self.buffer_order[buf_index] then
-		return
-	end
-
-	if not self.buffer_order[target_buf_index] then
+	if not self.buffer_order[buf_index] or not self.buffer_order[target_buf_index] then
 		return
 	end
 
 	local buf_id = self.buffer_order[buf_index]
 
-	local new_index = target_buf_index - 1
-	if new_index < 1 then
-		new_index = 1
-	end
-
 	table.remove(self.buffer_order, buf_index)
+
+	local new_index = target_buf_index > buf_index and target_buf_index - 1 or target_buf_index
+	new_index = math.max(1, math.min(new_index, #self.buffer_order + 1))
+
 	table.insert(self.buffer_order, new_index, buf_id)
 	update_indices(self)
 end
