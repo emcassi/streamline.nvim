@@ -311,28 +311,28 @@ function M:gather_buffers()
 	update_indices(self)
 end
 
-function M:on_buffer_added(id)
-	local bt = vim.bo[id].buftype
+function M:on_buffer_added(buf_id)
+	local bt = vim.bo[buf_id].buftype
 	if vim.tbl_contains(self.ignore_buftypes, bt) then
 		return
 	end
 
-	for buf_id, buf in pairs(self.buffers) do
-		if is_empty_modified_buffer(buf_id) then
-			self.buffers[buf_id] = self:create_buffer_entry(id)
-			self.buffer_order[buf.index] = id
-			update_indices(self)
-			return
+	local new_buf = self:create_buffer_entry(buf_id)
+	if new_buf then
+		self.buffers[buf_id] = new_buf
+		if self.config.default_insert_behavior == "beginning" then
+			table.insert(self.buffer_order, 1, buf_id)
+		elseif self.config.default_insert_behavior == "end" then
+			table.insert(self.buffer_order, buf_id)
+		elseif self.config.default_insert_behavior == "before" then
+			local target_index = self.active_buf and self:get_buffer_index_from_id(self.active_buf.id) or 1
+			table.insert(self.buffer_order, target_index, buf_id)
+		elseif self.config.default_insert_behavior == "after" then
+			local target_index = self.active_buf and self:get_buffer_index_from_id(self.active_buf.id) + 1
+				or #self.buffer_order + 1
+			table.insert(self.buffer_order, target_index, buf_id)
 		end
-	end
-
-	if not self.buffers[id] then
-		local new_buf = self:create_buffer_entry(id)
-		if new_buf then
-			self.buffers[id] = new_buf
-			table.insert(self.buffer_order, id)
-			update_indices(self)
-		end
+		update_indices(self)
 	end
 end
 
