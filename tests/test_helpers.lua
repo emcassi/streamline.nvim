@@ -3,7 +3,6 @@ local created_buffers = {}
 
 function M.add_buffer(name_prefix)
 	local buf_id = vim.api.nvim_create_buf(true, false)
-	-- Unique name with prefix and clock timestamp
 	local unique_name = name_prefix .. os.clock() .. ".txt"
 	vim.api.nvim_buf_set_name(buf_id, unique_name)
 	return buf_id
