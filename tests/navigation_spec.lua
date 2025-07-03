@@ -25,7 +25,7 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_backward()
 
-		assert.is_equal(core.active_buf.id, buf1_id)
+		assert.is_equal(core:get_active_buf().id, buf1_id)
 	end)
 
 	it("go to the buffer before the current in the list of 3", function()
@@ -46,7 +46,7 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_backward()
 
-		assert.is_equal(core.active_buf.id, buf2_id)
+		assert.is_equal(core:get_active_buf().id, buf2_id)
 	end)
 
 	it("navigation wraps around the list going backwards", function()
@@ -69,7 +69,7 @@ describe("Streamline navigation", function()
 		navigation:navigate_backward()
 		navigation:navigate_backward()
 
-		assert.is_equal(core.active_buf.id, buf3_id)
+		assert.is_equal(core:get_active_buf().id, buf3_id)
 	end)
 
 	it("go to the buffer after the current in the list of 2", function()
@@ -87,7 +87,7 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_forward()
 
-		assert.is_equal(core.active_buf.id, buf2_id)
+		assert.is_equal(core:get_active_buf().id, buf2_id)
 	end)
 
 	it("go to the buffer after the current in the list of 3", function()
@@ -110,7 +110,7 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_forward()
 
-		assert.is_equal(core.active_buf.id, buf3_id)
+		assert.is_equal(core:get_active_buf().id, buf3_id)
 	end)
 
 	it("navigation wraps around the list going forwards", function()
@@ -133,7 +133,7 @@ describe("Streamline navigation", function()
 		navigation:navigate_forward()
 		navigation:navigate_forward()
 
-		assert.is_equal(core.active_buf.id, buf3_id)
+		assert.is_equal(core:get_active_buf().id, buf3_id)
 	end)
 
 	it("go to the previous buffer in a list of 1", function()
@@ -144,7 +144,7 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_to_previous() -- no previous buffer
 
-		assert.is_equal(core.active_buf.id, buf1_id)
+		assert.is_equal(core:get_active_buf().id, buf1_id)
 	end)
 
 	it("go to the previous buffer in a list of 2", function()
@@ -159,7 +159,7 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_to_previous() -- previous buffer should be buf1
 
-		assert.is_equal(core.active_buf.id, buf1_id)
+		assert.is_equal(core:get_active_buf().id, buf1_id)
 	end)
 
 	it("go to the previous buffer in a list of 3", function()
@@ -180,6 +180,6 @@ describe("Streamline navigation", function()
 
 		navigation:navigate_to_previous() -- previous buffer should be buf1
 
-		assert.is_equal(core.active_buf.id, buf3_id)
+		assert.is_equal(core:get_active_buf().id, buf3_id)
 	end)
 end)

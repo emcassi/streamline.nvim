@@ -20,8 +20,8 @@ describe("Streamline add / remove buffers", function()
 		vim.api.nvim_buf_set_name(buf_id, "test")
 		buffer_state:on_buffer_added(buf_id)
 
-		assert.is_true(core.buffers[buf_id] ~= nil)
-		assert.is_true(vim.tbl_contains(core.buffer_order, buf_id))
+		assert.is_true(core:get_buffer_by_id(buf_id) ~= nil)
+		assert.is_true(vim.tbl_contains(core:get_buffer_order(), buf_id))
 	end)
 
 	it("adds an identical buffer to the list", function()
@@ -47,7 +47,7 @@ describe("Streamline add / remove buffers", function()
 		vim.api.nvim_buf_set_name(buf_id, "test")
 		buffer_state:on_buffer_added(buf_id)
 
-		assert.is_true(core.buffers[buf_id] == nil)
+		assert.is_true(core:get_buffer_by_id(buf_id) == nil)
 		assert.is_false(vim.tbl_contains(core.buffer_order, buf_id))
 	end)
 
@@ -59,8 +59,8 @@ describe("Streamline add / remove buffers", function()
 		vim.api.nvim_buf_set_name(buf_id, "test")
 		buffer_state:on_buffer_removed(buf_id)
 
-		assert.is_true(core.buffers[buf_id] == nil)
-		assert.is_false(vim.tbl_contains(core.buffer_order, buf_id))
+		assert.is_true(core:get_buffer_by_id(buf_id) == nil)
+		assert.is_false(vim.tbl_contains(core:get_buffer_order(), buf_id))
 	end)
 
 	it("deletes the active buffer in a list", function()
@@ -71,13 +71,13 @@ describe("Streamline add / remove buffers", function()
 		local buf3_id = add_buffer("test3")
 		test_helpers.track_buffer(buf3_id)
 
-		local buf2 = core.buffers[buf2_id]
-		core.active_buf = buf2
+		local buf2 = core:get_buffer_by_id(buf2_id)
+		core:set_active_buffer(buf2)
 
 		buffer_state:on_buffer_removed(core.active_buf)
 
-		assert.is_true(core.buffers[buf2_id] == nil)
-		assert.is_false(vim.tbl_contains(core.buffer_order, buf2_id))
+		assert.is_true(core:get_buffer_by_id(buf2_id) == nil)
+		assert.is_false(vim.tbl_contains(core:get_buffer_order(), buf2_id))
 	end)
 
 	it("deletes a buffer that was just inserted", function()
@@ -92,7 +92,7 @@ describe("Streamline add / remove buffers", function()
 
 		buffer_state:on_buffer_removed(buf2_id)
 
-		assert.is_true(core.buffers[buf2_id] == nil)
-		assert.is_false(vim.tbl_contains(core.buffer_order, buf2_id))
+		assert.is_true(core:get_buffer_by_id(buf2_id) == nil)
+		assert.is_false(vim.tbl_contains(core:get_buffer_order(), buf2_id))
 	end)
 end)

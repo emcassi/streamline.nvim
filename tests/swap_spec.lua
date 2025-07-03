@@ -24,9 +24,9 @@ describe("Streamline swap buffer", function()
 
 		reordering:swap_buffer_with(1, 2)
 
-		assert.is_equal(core.active_buf.id, buf2_id)
-		assert.is_equal(core.buffer_order[1], buf2_id)
-		assert.is_equal(core.buffer_order[2], buf1_id)
+		assert.is_equal(core:get_active_buf().id, buf2_id)
+		assert.is_equal(core:get_buffer_order()[1], buf2_id)
+		assert.is_equal(core:get_buffer_order()[2], buf1_id)
 	end)
 
 	it("swap buffers at index 1 and 3 in a list of 3", function()
@@ -47,9 +47,9 @@ describe("Streamline swap buffer", function()
 
 		reordering:swap_buffer_with(1, 3)
 
-		assert.is_equal(core.active_buf.id, buf3_id)
-		assert.is_equal(core.buffer_order[1], buf3_id)
-		assert.is_equal(core.buffer_order[2], buf2_id)
-		assert.is_equal(core.buffer_order[3], buf1_id)
+		assert.is_equal(core:get_active_buf().id, buf3_id)
+		assert.is_equal(core:get_buffer_order()[1], buf3_id)
+		assert.is_equal(core:get_buffer_order()[2], buf2_id)
+		assert.is_equal(core:get_buffer_order()[3], buf1_id)
 	end)
 end)
