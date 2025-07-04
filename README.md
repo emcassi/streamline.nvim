@@ -1,5 +1,5 @@
 # streamline.nvim
-<img src="./docs/assets/streamline-logo-full.svg" alt="Streamline logo" width="200" />
+<img src="./docs/assets/streamline-logo-full.png" alt="Streamline logo" width="200" />
 
 *Your buffers, beautifully organized. A smarter, smoother way to navigate, reorder, and manage buffers in Neovim.*
 
