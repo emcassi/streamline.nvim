@@ -1,7 +1,7 @@
 # Streamline
 
 <div style="width: 100%;margin:auto;width:200px;">
-<img src="./assets/streamline-logo-full.svg" alt="Streamline logo" width="200" />
+<img src="./assets/streamline-logo-full.png" alt="Streamline logo" width="200" />
 </div>
 
 ## Welcome
