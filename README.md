@@ -1,11 +1,11 @@
 # streamline.nvim
-**Your buffers, beautifully organized.
-A smarter, smoother way to navigate, reorder, and manage buffers in Neovim.**
+<img src="./docs/assets/streamline-logo-full.svg" alt="Streamline logo" width="200" />
+
+*Your buffers, beautifully organized. A smarter, smoother way to navigate, reorder, and manage buffers in Neovim.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/emcassi/streamline.nvim)
 ![GitHub Repo stars](https://img.shields.io/github/stars/emcassi/streamline.nvim)
-
 
 ## Overview
 
@@ -118,18 +118,18 @@ Commands:
 
 ## Planned Features
 
-| Feature                      | MVP  | Polish |
-| ---------------------------- | ---- | ------ |
+| Feature                      | MVP | Polish |
+| ---------------------------- | --- | ------ |
 | Ordered buffer list          | ✅   |        |
 | Navigation by position/index | ✅   |        |
 | Reordering buffers           | ✅   |        |
 | Custom insert behavior       | ⬜   |        |
 | Optional UI tabline          | ⬜   |        |
-| Buffer pinning               |       | ⬜    |
-| Named/hidden buffers         |       | ⬜    |
-| Session persistence          |       | ⬜    |
-| Mouse support                |       | ⬜    |
-| Telescope integration        |       | ⬜    |
+| Buffer pinning               |     | ⬜      |
+| Named/hidden buffers         |     | ⬜      |
+| Session persistence          |     | ⬜      |
+| Mouse support                |     | ⬜      |
+| Telescope integration        |     | ⬜      |
 
 ## Use Cases
 ### Mental Model Clarity
