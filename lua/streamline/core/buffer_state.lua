@@ -179,13 +179,11 @@ function M:clean_empty_buffers()
 end
 
 function M:on_buffer_removed(buf_id)
-	print("got into on_buffer_removed step 1")
 	if
 		core:get_active_buf()
 		and core:get_active_buf().id == buf_id
 		and self:get_buffer_display_name(buf_id) == "[No Name]"
 	then
-		print("got into on_buffer_removed step 2")
 		if not vim.api.nvim_buf_is_valid(buf_id) then
 			core.buffers[buf_id] = nil
 			core:remove_from_buffer_order(buf_id)
