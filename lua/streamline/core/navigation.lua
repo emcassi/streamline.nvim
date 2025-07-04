@@ -41,7 +41,7 @@ function M:navigate_to_index(index)
 	core:set_is_navigating(true)
 
 	if core:get_active_buf() and core:get_active_buf_index() ~= new_buf_id then
-		core.set_previous_buf(core:get_active_buf())
+		core:set_previous_buf(core:get_active_buf())
 	end
 
 	local new_buf = core:get_buffer_by_id(new_buf_id)

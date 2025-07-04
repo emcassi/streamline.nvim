@@ -131,9 +131,14 @@ function M:on_buffer_added(buf_id)
 		return
 	end
 
+	if core.buffers[buf_id] then
+		return
+	end
+
 	local new_buf = self:create_buffer_entry(buf_id)
 	if new_buf then
 		core:set_buffer(buf_id, new_buf)
+
 		if config.default_insert_behavior == "beginning" then
 			core:insert_buffer_at_index(new_buf, 1)
 		elseif config.default_insert_behavior == "end" then
@@ -145,6 +150,7 @@ function M:on_buffer_added(buf_id)
 			local target_index = core.active_buf and core.active_buf.index + 1 or core:get_num_buffers() + 1
 			core:insert_buffer_at_index(new_buf, target_index)
 		end
+
 		self:update_indices()
 	end
 end
@@ -172,20 +178,45 @@ function M:clean_empty_buffers()
 	end
 end
 
-function M:on_buffer_removed(id)
-	if core.buffers[id] then
-		local index = core:get_buffer_by_id(id).index
-		core:remove_buffer_at_index(index)
+function M:on_buffer_removed(buf_id)
+	print("got into on_buffer_removed step 1")
+	if
+		core:get_active_buf()
+		and core:get_active_buf().id == buf_id
+		and self:get_buffer_display_name(buf_id) == "[No Name]"
+	then
+		print("got into on_buffer_removed step 2")
+		if not vim.api.nvim_buf_is_valid(buf_id) then
+			core.buffers[buf_id] = nil
+			core:remove_from_buffer_order(buf_id)
+			self:update_indices()
+		end
+		return
+	end
 
-		if core.active_buf and core.active_buf.id == id then
+	if core.buffers[buf_id] then
+		core:remove_from_buffer_order(buf_id)
+
+		if core.active_buf and core.active_buf.id == buf_id then
 			core.previous_buf = core.active_buf
 			core.active_buf = nil
 		end
 
-		if core.previous_buf and core.previous_buf.id == id then
+		if core.previous_buf and core.previous_buf.id == buf_id then
 			core.previous_buf = nil
 		end
 
+		self:update_indices()
+	end
+end
+
+local function update_buffer_metadata_if_changed(self, buf_id)
+	local current_display_name = core:get_buffer_by_id(buf_id).display_name
+
+	local display_name = self:get_buffer_display_name(buf_id)
+
+	if current_display_name ~= display_name then
+		core:set_buffer(buf_id, self:create_buffer_entry(buf_id))
 		self:update_indices()
 	end
 end
@@ -195,18 +226,26 @@ function M:on_buffer_entered(id)
 		core:set_is_navigating(false)
 	end
 
-	local success, is_valid = pcall(vim.api.nvim_buf_is_valid, id)
-	if success and is_valid and core:get_buffer_by_id(id) ~= nil then
-		local buf = core.buffers[id]
-		if core.active_buf and core.active_buf.id ~= id then
-			core.previous_buf = core.active_buf
-		elseif not core.active_buf then
-			core.active_buf = nil
-		end
-
-		buf.index = core:get_buffer_by_id(id).index
-		core:set_active_buffer(buf)
+	if core:get_active_buf() and core:get_active_buf().id ~= nil and core:get_active_buf().id ~= id then
+		core.previous_buf = core.active_buf
 	end
+
+	local current_buf = core:get_buffer_by_id(id)
+	if current_buf then
+		update_buffer_metadata_if_changed(self, id)
+	end
+
+	local success, is_valid = pcall(vim.api.nvim_buf_is_valid, id)
+	if not (success and is_valid) then
+		return
+	end
+
+	local buf = core:get_buffer_by_id(id)
+	if not buf then
+		return
+	end
+
+	core:set_active_buffer(buf)
 end
 
 function M:teardown()
