@@ -1,4 +1,5 @@
 local M = {
+	windows = {},
 	buffers = {},
 	buffer_order = {},
 	active_buf = nil,
@@ -15,6 +16,7 @@ function M:init()
 	require("streamline.core.events"):register_events()
 	require("streamline.core.config"):setup_commands()
 	require("streamline.core.buffer_state"):gather_buffers()
+	require("streamline.core.buffer_state"):gather_windows()
 end
 
 function M:set_buffer(buf_id, buf)
